@@ -81,15 +81,75 @@ describe('PlaylistsPage', () => {
         const heading = await screen.findByRole('heading', { level: 1, name: 'Your Playlists' });
         expect(heading).toBeInTheDocument();
 
-        // should render heading of level 2 showing total playlist count
-        const countHeading = await screen.findByRole('heading', { level: 2, name: `${limit} Playlists` });
-        expect(countHeading).toBeInTheDocument();
+    // should render heading of level 2 showing total playlist count
+    const expectedLeft = Math.min(limit, playlistsData.total);
+    const countRe = new RegExp(`${expectedLeft}\\s*Playlists\\s*of\\s*${playlistsData.total}\\s*Playlists`);
+    const countHeading = await screen.findByText(countRe);
+    expect(countHeading).toBeInTheDocument();
 
         // verify each playlist item rendered, don't check details here as covered in PlaylistItem tests
         for (const playlist of playlistsData.items) {
             expect(await screen.findByTestId(`playlist-item-${playlist.id}`)).toBeInTheDocument();
         }
     });
+
+
+    test('displays total playlists count from the API', async () => {
+        // Render the PlaylistsPage
+        renderPlaylistsPage();
+
+        // wait for loading to finish
+        await waitForLoadingToFinish();
+
+        // The PlaylistsPage renders "<displayed> Playlists of <total> Playlists"
+        // Use a regex to tolerate whitespace/newlines in the rendered output
+        const expectedLeft2 = Math.min(limit, playlistsData.total);
+        const totalRe = new RegExp(`${expectedLeft2}\\s*Playlists\\s*of\\s*${playlistsData.total}\\s*Playlists`);
+        const heading = await screen.findByText(totalRe);
+
+        // It should be present and have the correct class
+        expect(heading).toBeInTheDocument();
+        expect(heading).toHaveClass('playlists-count');
+    });
+
+    test('displays singular label when only one playlist exists', async () => {
+        // Mock API to return a single playlist
+        const single = { items: [ { id: 'only1', name: 'Only Playlist', images: [{ url: 'https://via.placeholder.com/56' }], owner: { display_name: 'User' }, tracks: { total: 1 }, external_urls: { spotify: 'https://open.spotify.com/playlist/only1' } } ], total: 1 };
+        jest.spyOn(spotifyApi, 'fetchUserPlaylists').mockResolvedValue({ data: single, error: null });
+
+        // Render the PlaylistsPage
+        renderPlaylistsPage();
+
+        // wait for loading to finish
+        await waitForLoadingToFinish();
+
+        // Expect "1 Playlist of 1 Playlist"
+        const singularRe = new RegExp(`1\\s*Playlist\\s*of\\s*1\\s*Playlist`);
+        const heading = await screen.findByText(singularRe);
+        expect(heading).toBeInTheDocument();
+        expect(heading).toHaveClass('playlists-count');
+
+        // cleanup this override mock so other tests keep the default
+        jest.spyOn(spotifyApi, 'fetchUserPlaylists').mockResolvedValue({ data: playlistsData, error: null });
+    });
+
+    test('shows 0 playlists when API returns none', async () => {
+        // Mock API to return no playlists
+        jest.spyOn(spotifyApi, 'fetchUserPlaylists').mockResolvedValue({ data: { items: [], total: 0 }, error: null });
+
+        // Render the PlaylistsPage
+        renderPlaylistsPage();
+
+        // wait for loading to finish
+        await waitForLoadingToFinish();
+
+        // Expect "0 Playlists of 0 Playlists"
+        const zeroRe = new RegExp(`0\\s*Playlists\\s*of\\s*0\\s*Playlists`);
+        const heading = await screen.findByText(zeroRe);
+        expect(heading).toBeInTheDocument();
+        expect(heading).toHaveClass('playlists-count');
+    });
+
 
     test('displays error message on fetchUserPlaylists error', async () => {
         // Mock fetchUserPlaylists to return error
@@ -150,9 +210,11 @@ describe('PlaylistsPage', () => {
         const heading1 = screen.getByRole('heading', { level: 1, name: `Your Playlists` });
         expect(heading1).toHaveClass('playlists-title', 'page-title');
 
-        // should have heading level 2 with appropriate class name
-        const heading2 = screen.getByRole('heading', { level: 2, name: `${limit} Playlists` });
-        expect(heading2).toHaveClass('playlists-count');
+    // should have heading level 2 with appropriate class name
+    const expectedLeft3 = Math.min(limit, playlistsData.total);
+    const heading2Re = new RegExp(`${expectedLeft3}\\s*Playlists\\s*of\\s*${playlistsData.total}\\s*Playlists`);
+    const heading2 = screen.getByText(heading2Re);
+    expect(heading2).toHaveClass('playlists-count');
 
         // should have ordered list with appropriate class name
         const list = screen.getByRole('list');
