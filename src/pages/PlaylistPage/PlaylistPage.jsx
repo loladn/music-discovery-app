@@ -67,8 +67,8 @@ export default function PlaylistPage() {
                 <div>
                     <h2>{playlist.name}</h2>
                     <p>{playlist.description}</p>
-                    <p><strong>Propriétaire : </strong> {playlist.owner?.display_name}</p>
-                    <p><strong>Nombre de musiques : </strong> {playlist.tracks?.items?.length || 0}</p>
+                    <p>{playlist.owner?.display_name}</p>
+                    <p><strong>{playlist.tracks?.items?.length || 0} tracks</strong></p>
 
                     <a href={playlist.external_urls?.spotify} target="_blank" rel="noopener noreferrer" style={{padding: '10px 15px', backgroundColor: '#1DB954', color: 'white', borderRadius: '4px', textDecoration: 'none'}}>
                         Open in Spotify
@@ -79,7 +79,7 @@ export default function PlaylistPage() {
 
             {playlist.tracks?.items && playlist.tracks.items.length > 0 && (
                 <div>
-                    <h3>Musiques de la playlist</h3>
+                    {/* <h3>Tracks in the playlist</h3> */}
                     <ul style={{listStyle: 'none', padding: 0}}>
                         {playlist.tracks.items.map((item, index) => (
                             <TrackItem key={item.track.id || index} track={item.track} />
