@@ -157,11 +157,11 @@ describe('TopArtistsPage', () => {
     // wait for loading to finish
     await waitForLoadingToFinish();
 
-    // Verify each TopArtistItem shows the expected 1-based index prefix (e.g. "1. Top Artist 1")
+    // Vérifie que chaque artiste a un préfixe d'index basé sur 1 (par exemple "1. Top Artist 1")
     for (let i = 0; i < artistsData.items.length; i++) {
         const artist = artistsData.items[i];
         const item = await screen.findByTestId(`top-artist-item-${artist.id}`);
-        // inside the item, there should be a title that starts with the 1-based index
+        // un titre avec le numéro de classement
         const titleText = `${i + 1}. ${artist.name}`;
         expect(within(item).getByText(titleText)).toBeInTheDocument();
     }
