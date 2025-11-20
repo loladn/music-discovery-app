@@ -38,21 +38,29 @@ export default function TopTracksPage() {
   useEffect(() => { document.title = buildTitle('Top Tracks'); }, []);
 
 
-  useEffect(() => {
+    useEffect(() => {
     if (!token) return; // wait for check or redirect
     // fetch user top tracks when token changes
     fetchUserTopTracks(token, limit, timeRange)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
           if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+            setError(res.error.message || res.error);
           }
+          setTracks([]);
+          return;
         }
         setTracks(res.data.items);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setTracks([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
+
 
   return (
     <section className="tracks-container page-container" aria-labelledby="tracks-title">
