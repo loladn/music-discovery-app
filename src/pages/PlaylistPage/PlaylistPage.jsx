@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { buildTitle } from '../../constants/appMeta.js';
 import { fetchPlaylistById } from '../../api/spotify-playlists.js';
 import { useRequireToken } from '../../hooks/useRequireToken.js';
+import { handleTokenError } from '../../utils/handleTokenError.js';
 import TrackItem from '../../components/TrackItem/TrackItem.jsx';
+import '../PageLayout.css';
+import '../../styles/PlaylistPage.css';
+
 
 
 /**
@@ -10,85 +15,140 @@ import TrackItem from '../../components/TrackItem/TrackItem.jsx';
  * @returns {JSX.Element}
  */
 export default function PlaylistPage() {
-    // récupérer l'id depuis l'url sur lequel on se trouve
-    const { id } = useParams();
+  const { id } = useParams();
+  const navigate = useNavigate();
 
-    // états pour les données
-    const [playlist, setPlaylist] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const [playlist, setPlaylist] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    // récupérer le token
-    const {token} = useRequireToken();
+  const { token } = useRequireToken();
 
-    // effet pour charger les données
-    useEffect(() => {
-        // on attend la vérification de l'authentification
-        if (!token || !id) return;
+  // Met le titre de la page
+  useEffect(() => {
+    const titleSuffix = playlist?.name ? `Playlist – ${playlist.name}` : 'Playlist';
+    document.title = buildTitle(titleSuffix);
+  }, [playlist]);
 
-        console.log('Chargement de la playlist avec ID :', id);
+  // Charge la playlist depuis l'API
+  useEffect(() => {
+    if (!token || !id) return;
 
-        fetchPlaylistById(token, id)
-            .then(result => {
-                console.log('Résultat de l\'API :', result);
-                if (result.error) {
-                    setError(result.error);
-                } else {
-                    setPlaylist(result.data);
-                }
-                
-            })
-            .catch(err => {
-                console.error('Erreur lors de la récupération de la playlist :', err);
-                setError(err.message);
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }, [token, id]);
+    setLoading(true);
+    setError(null);
 
-    //affichage basique pour l'instant
-    if (loading) return <div>Chargement de la playlist...</div>;
-    if (error) return <div>Erreur : {error}</div>;
-    if (!playlist) return <div>Playlist non trouvée</div>;
+    fetchPlaylistById(token, id)
+      .then((res) => {
+        if (res.error) {
+          if (!handleTokenError(res.error, navigate)) {
+            setError(res.error.message || res.error);
+          }
+          setPlaylist(null);
+          return;
+        }
+
+        setPlaylist(res.data);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setPlaylist(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [token, id, navigate]);
+
+  if (loading) {
+    return (
+      <section className="playlist-container page-container">
+        <output
+          className="playlist-loading"
+          data-testid="loading-indicator"
+        >
+          Loading playlist…
+        </output>
+      </section>
+    );
+  }
+
+  if (error) {
+    const message = typeof error === 'string' ? error : error?.message || 'Unable to load playlist.';
 
     return (
-        <div>
-            <h1>Playlist Page</h1>
-            <div style={{display: 'flex', gap: '20px', marginBottom: '20px'}}>
-                {playlist.images?.[0] && (
-                    <img 
-                        src={playlist.images[0].url} 
-                        alt={`Cover of ${playlist.name}`}
-                        style={{ width: '180px', height: '180px', objectFit: 'cover', borderRadius: '8px' }}
-                    />
-                )}
-
-                <div>
-                    <h2>{playlist.name}</h2>
-                    <p>{playlist.description}</p>
-                    <p>{playlist.owner?.display_name}</p>
-                    <p><strong>{playlist.tracks?.items?.length || 0} tracks</strong></p>
-
-                    <a href={playlist.external_urls?.spotify} target="_blank" rel="noopener noreferrer" style={{padding: '10px 15px', backgroundColor: '#1DB954', color: 'white', borderRadius: '4px', textDecoration: 'none'}}>
-                        Open in Spotify
-                    </a>
-                </div>
-            </div>
-            
-
-            {playlist.tracks?.items && playlist.tracks.items.length > 0 && (
-                <div>
-                    {/* <h3>Tracks in the playlist</h3> */}
-                    <ul style={{listStyle: 'none', padding: 0}}>
-                        {playlist.tracks.items.map((item, index) => (
-                            <TrackItem key={item.track.id || index} track={item.track} />
-                        ))}
-                    </ul>
-                </div>
-            )}
-            
-            <p><em>ID : {id}</em></p>
+      <section className="playlist-container page-container">
+        <div className="playlist-error" role="alert">
+          {message}
         </div>
+      </section>
     );
+  }
+
+  if (!playlist) {
+    return (
+      <section className="playlist-container page-container">
+        <div className="playlist-error" role="alert">
+          Playlist not found.
+        </div>
+      </section>
+    );
+  }
+
+  const tracks = playlist.tracks?.items ?? [];
+
+  return (
+    <section
+      className="playlist-container page-container"
+      aria-labelledby="playlist-title"
+    >
+      <header className="playlist-header">
+        <div className="playlist-header-image">
+          {playlist.images?.[0] && (
+            <img
+              src={playlist.images[0].url}
+              alt={`Cover of ${playlist.name}`}
+              className="playlist-cover"
+            />
+          )}
+        </div>
+
+        <div className="playlist-header-text-with-link">
+          <div className="playlist-header-text">
+            <h1 id="playlist-title" className="playlist-title page-title">
+              {playlist.name}
+            </h1>
+            {playlist.description && (
+              <p className="playlist-subtitle">{playlist.description}</p>
+            )}
+            <p className="playlist-track-count">
+              {(playlist.tracks?.total ?? tracks.length) || 0} tracks
+            </p>
+          </div>
+
+
+          {playlist.external_urls?.spotify && (
+            <a
+              href={playlist.external_urls.spotify}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="playlist-spotify-link"
+            >
+              Open in Spotify
+            </a>
+          )}
+        </div>
+      </header>
+
+      {tracks.length === 0 ? (
+        <p className="playlist-empty">This playlist is empty.</p>
+      ) : (
+        <ol className="playlist-list">
+          {tracks.map((item) =>
+            item?.track ? (
+              <TrackItem key={item.track.id} track={item.track} />
+            ) : null
+          )}
+        </ol>
+      )}
+    </section>
+  );
 }
