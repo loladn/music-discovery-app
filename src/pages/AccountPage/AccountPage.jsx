@@ -30,20 +30,27 @@ export default function AccountPage() {
   }, []);
 
 
-  useEffect(() => {
+    useEffect(() => {
     if (!token) return; // wait for auth check
     // fetch user profile when token changes
     fetchAccountProfile(token)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
           if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+            setError(res.error.message || res.error);
           }
+          setProfile(null);
+          return;
         }
         setProfile(res.data);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setProfile(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
 
   return (
