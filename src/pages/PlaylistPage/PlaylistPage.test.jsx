@@ -190,4 +190,28 @@ describe('PlaylistPage', () => {
         const list = screen.getByRole('list');
         expect(list).toHaveClass('playlist-list');
     });
+
+    
+    test('displays empty state when playlist has no tracks', async () => {
+        const emptyPlaylistData = {
+            ...playlistData,
+            tracks: {
+                items: [],
+                total: 0,
+            },
+        };
+
+        // override default mock for this test
+        spotifyApi.fetchPlaylistById.mockResolvedValue({
+            data: emptyPlaylistData,
+            error: null,
+        });
+
+        renderPlaylistPage('playlist1');
+
+        await waitForLoadingToFinish();
+
+        const emptyMessage = await screen.findByText(/This playlist is empty\./i);
+        expect(emptyMessage).toBeInTheDocument();
+    });
 });
