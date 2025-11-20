@@ -31,11 +31,8 @@ export default function PlaylistPage() {
   }, [playlist]);
 
   // Charge la playlist depuis l'API
-  useEffect(() => {
+    useEffect(() => {
     if (!token || !id) return;
-
-    setLoading(true);
-    setError(null);
 
     fetchPlaylistById(token, id)
       .then((res) => {
@@ -57,6 +54,7 @@ export default function PlaylistPage() {
         setLoading(false);
       });
   }, [token, id, navigate]);
+
 
   if (loading) {
     return (
@@ -113,16 +111,18 @@ export default function PlaylistPage() {
 
         <div className="playlist-header-text-with-link">
           <div className="playlist-header-text">
-            <h1 id="playlist-title" className="playlist-title page-title">
+                        <h1 id="playlist-title" className="playlist-title page-title">
               {playlist.name}
             </h1>
             {playlist.description && (
-              <p className="playlist-subtitle">{playlist.description}</p>
+              <h2 className="playlist-subtitle page-subtitle">
+                {playlist.description}
+              </h2>
             )}
             <p className="playlist-track-count">
               {(playlist.tracks?.total ?? tracks.length) || 0} tracks
             </p>
-          </div>
+            </div>
 
 
           {playlist.external_urls?.spotify && (
