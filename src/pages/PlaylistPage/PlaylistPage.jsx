@@ -6,8 +6,7 @@ import { useRequireToken } from '../../hooks/useRequireToken.js';
 import { handleTokenError } from '../../utils/handleTokenError.js';
 import TrackItem from '../../components/TrackItem/TrackItem.jsx';
 import '../PageLayout.css';
-import '../../styles/PlaylistPage.css';
-
+import '../../styles/PlaylistDetailPage.css';
 
 
 /**
