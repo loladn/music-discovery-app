@@ -35,21 +35,31 @@ export default function PlaylistsPage() {
   useEffect(() => { document.title = buildTitle('Playlists'); }, []);
 
 
-  useEffect(() => {
+    useEffect(() => {
     if (!token) return; // wait for auth check
-    // fetch user playlists when token changes
+
     fetchUserPlaylists(token, limit)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
+          // Si handleTokenError gère l’erreur (ex: token expiré), on ne fait rien d’autre
           if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+            setError(res.error.message || res.error);
           }
+          setPlaylists([]);
+          return;
         }
+
         setPlaylists(res.data.items);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setPlaylists([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
+
 
   return (
     <section className="playlists-container page-container" aria-labelledby="playlists-title">
