@@ -30,14 +30,23 @@ export default function AccountPage() {
   }, []);
 
 
-    useEffect(() => {
+      useEffect(() => {
     if (!token) return; // wait for auth check
     // fetch user profile when token changes
     fetchAccountProfile(token)
       .then((res) => {
         if (res.error) {
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // cas spécifique : token expiré -> redirection explicite vers /login
+          if (message && message.toLowerCase().includes('access token expired')) {
+            navigate('/login', { replace: true });
+            return;
+          }
+
           if (!handleTokenError(res.error, navigate)) {
-            setError(res.error.message || res.error);
+            setError(message || res.error);
           }
           setProfile(null);
           return;
@@ -52,6 +61,7 @@ export default function AccountPage() {
         setLoading(false);
       });
   }, [token, navigate]);
+
 
   return (
     <section className="account-page page-container" aria-labelledby="account-page-title">

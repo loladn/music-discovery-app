@@ -6,7 +6,8 @@ import { fetchUserPlaylists } from '../../api/spotify-me.js';
 import { handleTokenError } from '../../utils/handleTokenError.js';
 import './PlaylistsPage.css';
 import '../PageLayout.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+
 
 /**
  * Number of playlists to fetch
@@ -27,23 +28,34 @@ export default function PlaylistsPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch playlists
   const { token } = useRequireToken();
+
+  
 
   // Set document title
   useEffect(() => { document.title = buildTitle('Playlists'); }, []);
 
 
-    useEffect(() => {
+      useEffect(() => {
     if (!token) return; // wait for auth check
 
     fetchUserPlaylists(token, limit)
       .then((res) => {
         if (res.error) {
-          // Si handleTokenError gère l’erreur (ex: token expiré), on ne fait rien d’autre
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // Cas spécifique : token expiré -> on déclenche une redirection logique
+          if (message && message.toLowerCase().includes('access token expired')) {
+            setRedirectToLogin(true);
+            return;
+          }
+
           if (!handleTokenError(res.error, navigate)) {
-            setError(res.error.message || res.error);
+            setError(message || res.error);
           }
           setPlaylists([]);
           return;
@@ -60,6 +72,12 @@ export default function PlaylistsPage() {
       });
   }, [token, navigate]);
 
+
+
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="playlists-container page-container" aria-labelledby="playlists-title">
