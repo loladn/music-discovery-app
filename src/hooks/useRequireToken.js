@@ -9,15 +9,15 @@ export function useRequireToken() {
   const [checking, setChecking] = useState(true);
   const [token, setToken] = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
     let active = true;
     Promise.resolve().then(() => {
       if (!active) return;
-  const existing = localStorage.getItem(KEY_ACCESS_TOKEN);
+      const existing = localStorage.getItem(KEY_ACCESS_TOKEN);
       if (!existing) {
         // Include origin + path so that the login page can restore full context.
-        // We intentionally use globalThis.location pieces (not react-router) to avoid coupling.
-        const { origin, pathname, search, hash } = globalThis.location;
+        // Use window.location here so it also works in test environments.
+        const { origin, pathname, search, hash } = window.location;
         const fullTarget = `${origin}${pathname}${search}${hash}`;
         navigate(`/login?next=${encodeURIComponent(fullTarget)}`, { replace: true });
         setChecking(false);
@@ -28,6 +28,7 @@ export function useRequireToken() {
     });
     return () => { active = false; };
   }, [navigate]);
+
 
   return { token, checking };
 }

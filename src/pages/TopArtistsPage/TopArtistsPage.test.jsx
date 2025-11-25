@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from '@jest/globals';
 import '@testing-library/jest-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import TopArtistsPage, { limit, timeRange } from './TopArtistsPage.jsx';
 import * as spotifyApi from '../../api/spotify-me.js';
@@ -118,7 +118,7 @@ describe('TopArtistsPage', () => {
 
     test('redirects to login on token expiration', async () => {
         // Mock fetchUserTopArtists to return token expired error
-        jest.spyOn(spotifyApi, 'fetchUserTopArtists').mockResolvedValue({ artists: [], error: 'The access token expired' });
+        jest.spyOn(spotifyApi, 'fetchUserTopArtists').mockResolvedValue({ data: { items: [] }, error: 'The access token expired' });
 
         // Render the TopArtistsPage
         renderTopArtistsPage();
@@ -127,7 +127,7 @@ describe('TopArtistsPage', () => {
         await waitForLoadingToFinish();
 
         // Verify redirection to login page
-        expect(screen.getByText('Login Page')).toBeInTheDocument();
+        expect(await screen.findByText('Login Page')).toBeInTheDocument();
     });
 
     test('verify styling and accessibility attributes using role', async () => {
@@ -148,5 +148,22 @@ describe('TopArtistsPage', () => {
         // should have ordered list with appropriate class name
         const list = screen.getByRole('list');
         expect(list).toHaveClass('artists-list');
+    });
+
+    test('correct artists ranking numbers', async () => {
+    // Render the TopArtistsPage
+    renderTopArtistsPage();
+
+    // wait for loading to finish
+    await waitForLoadingToFinish();
+
+    // Vérifie que chaque artiste a un préfixe d'index basé sur 1 (par exemple "1. Top Artist 1")
+    for (let i = 0; i < artistsData.items.length; i++) {
+        const artist = artistsData.items[i];
+        const item = await screen.findByTestId(`top-artist-item-${artist.id}`);
+        // un titre avec le numéro de classement
+        const titleText = `${i + 1}. ${artist.name}`;
+        expect(within(item).getByText(titleText)).toBeInTheDocument();
+    }
     });
 });

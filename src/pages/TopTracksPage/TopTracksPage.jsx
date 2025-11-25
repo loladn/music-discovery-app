@@ -6,8 +6,7 @@ import '../PageLayout.css';
 import TrackItem from '../../components/TrackItem/TrackItem.jsx';
 import { fetchUserTopTracks } from '../../api/spotify-me.js';
 import { handleTokenError } from '../../utils/handleTokenError.js';
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate, Navigate } from 'react-router-dom';
 /**
  * Number of top tracks to fetch
  */
@@ -30,6 +29,7 @@ export default function TopTracksPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch top tracks
   const { token } = useRequireToken();
@@ -42,17 +42,41 @@ export default function TopTracksPage() {
     if (!token) return; // wait for check or redirect
     // fetch user top tracks when token changes
     fetchUserTopTracks(token, limit, timeRange)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
-          if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // Cas spécifique : token expiré -> on déclenche une redirection logique
+          if (message && message.toLowerCase().includes('access token expired')) {
+            setRedirectToLogin(true);
+            return;
           }
+
+          if (!handleTokenError(res.error, navigate)) {
+            setError(message || res.error);
+          }
+          setTracks([]);
+          return;
         }
         setTracks(res.data.items);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setTracks([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
+
+
+
+
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="tracks-container page-container" aria-labelledby="tracks-title">

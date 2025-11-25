@@ -3,6 +3,7 @@
 import { describe, expect, test } from '@jest/globals'
 import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import PlayListItem from './PlayListItem';
 
 describe('PlayListItem component', () => {
@@ -17,7 +18,11 @@ describe('PlayListItem component', () => {
             external_urls: { spotify: 'https://open.spotify.com/playlist/playlist1' }
         };
         // Act
-        render(<PlayListItem playlist={playlist} />);
+        render(
+            <BrowserRouter>
+                <PlayListItem playlist={playlist} />
+            </BrowserRouter>
+        );
 
         // Assert
         // items are rendered correctly
@@ -30,7 +35,14 @@ describe('PlayListItem component', () => {
         expect(screen.getByText(`By ${playlist.owner.display_name}`)).toBeInTheDocument();
         // track count is rendered correctly
         expect(screen.getByText(`${playlist.tracks.total} tracks`)).toBeInTheDocument();
-        // link is rendered correctly
-        expect(screen.getByRole('link')).toHaveAttribute('href', playlist.external_urls.spotify);
+        
+        // Vérifie le lien interne vers la page de détail
+        const internalLink = screen.getByRole('link', { name: /Test Playlist/ });
+        expect(internalLink).toHaveAttribute('href', `/playlist/${playlist.id}`);
+        
+        // Vérifie le lien externe vers Spotify
+        const spotifyLink = screen.getByRole('link', { name: /Open/ });
+        expect(spotifyLink).toHaveAttribute('href', playlist.external_urls.spotify);
+        expect(spotifyLink).toHaveAttribute('target', '_blank');
     });
 });

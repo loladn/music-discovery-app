@@ -6,7 +6,7 @@ import { fetchUserTopArtists } from '../../api/spotify-me.js';
 import { handleTokenError } from '../../utils/handleTokenError.js';
 import './TopArtistsPage.css';
 import '../PageLayout.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 /**
  * Number of artists to fetch
@@ -32,6 +32,7 @@ export default function TopArtistsPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch playlists
   const { token } = useRequireToken();
@@ -45,15 +46,33 @@ export default function TopArtistsPage() {
     fetchUserTopArtists(token, limit, timeRange)
       .then(res => {
         if (res.error) {
-          if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // Cas spécifique : token expiré -> redirection explicite vers /login
+          if (message && message.toLowerCase().includes('access token expired')) {
+            setRedirectToLogin(true);
+            return;
           }
+
+          if (!handleTokenError(res.error, navigate)) {
+            setError(message || res.error);
+          }
+          setArtists([]);
+          return;
         }
         setArtists(res.data.items);
       })
-      .catch(err => { setError(err.message); })
+      .catch(err => {
+        setError(err.message);
+        setArtists([]);
+      })
       .finally(() => { setLoading(false); });
   }, [token, navigate]);
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="artists-container page-container" aria-labelledby="artists-title">

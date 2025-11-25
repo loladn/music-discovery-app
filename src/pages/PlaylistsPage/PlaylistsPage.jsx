@@ -6,7 +6,8 @@ import { fetchUserPlaylists } from '../../api/spotify-me.js';
 import { handleTokenError } from '../../utils/handleTokenError.js';
 import './PlaylistsPage.css';
 import '../PageLayout.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
+
 
 /**
  * Number of playlists to fetch
@@ -27,9 +28,12 @@ export default function PlaylistsPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch playlists
   const { token } = useRequireToken();
+
+  
 
   // Set document title
   useEffect(() => { document.title = buildTitle('Playlists'); }, []);
@@ -37,19 +41,43 @@ export default function PlaylistsPage() {
 
   useEffect(() => {
     if (!token) return; // wait for auth check
-    // fetch user playlists when token changes
+
     fetchUserPlaylists(token, limit)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
-          if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // Cas spécifique : token expiré -> on déclenche une redirection logique
+          if (message && message.toLowerCase().includes('access token expired')) {
+            setRedirectToLogin(true);
+            return;
           }
+
+          if (!handleTokenError(res.error, navigate)) {
+            setError(message || res.error);
+          }
+          setPlaylists([]);
+          return;
         }
+
         setPlaylists(res.data.items);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setPlaylists([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
+
+
+
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="playlists-container page-container" aria-labelledby="playlists-title">

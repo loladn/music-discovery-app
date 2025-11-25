@@ -4,7 +4,7 @@ import { useRequireToken } from '../../hooks/useRequireToken.js';
 import './AccountPage.css';
 import '../PageLayout.css';
 import { handleTokenError } from '../../utils/handleTokenError.js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 /**
  * Account component to display user profile information.
@@ -20,6 +20,7 @@ export default function AccountPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch profile
   const { token } = useRequireToken();
@@ -34,17 +35,38 @@ export default function AccountPage() {
     if (!token) return; // wait for auth check
     // fetch user profile when token changes
     fetchAccountProfile(token)
-      .then(res => {
+      .then((res) => {
         if (res.error) {
-          if (!handleTokenError(res.error, navigate)) {
-            setError(res.error);
+          const message =
+            typeof res.error === 'string' ? res.error : res.error?.message;
+
+          // cas spécifique : token expiré -> redirection explicite vers /login
+          if (message && message.toLowerCase().includes('access token expired')) {
+            setRedirectToLogin(true);
+            return;
           }
+
+          if (!handleTokenError(res.error, navigate)) {
+            setError(message || res.error);
+          }
+          setProfile(null);
+          return;
         }
         setProfile(res.data);
       })
-      .catch(err => { setError(err.message); })
-      .finally(() => { setLoading(false); });
+      .catch((err) => {
+        setError(err.message);
+        setProfile(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [token, navigate]);
+
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="account-page page-container" aria-labelledby="account-page-title">
