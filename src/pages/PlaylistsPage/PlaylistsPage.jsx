@@ -39,7 +39,7 @@ export default function PlaylistsPage() {
   useEffect(() => { document.title = buildTitle('Playlists'); }, []);
 
 
-      useEffect(() => {
+  useEffect(() => {
     if (!token) return; // wait for auth check
 
     fetchUserPlaylists(token, limit)

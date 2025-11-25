@@ -38,7 +38,7 @@ export default function TopTracksPage() {
   useEffect(() => { document.title = buildTitle('Top Tracks'); }, []);
 
 
-        useEffect(() => {
+  useEffect(() => {
     if (!token) return; // wait for check or redirect
     // fetch user top tracks when token changes
     fetchUserTopTracks(token, limit, timeRange)

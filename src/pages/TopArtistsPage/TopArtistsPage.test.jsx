@@ -118,7 +118,7 @@ describe('TopArtistsPage', () => {
 
     test('redirects to login on token expiration', async () => {
         // Mock fetchUserTopArtists to return token expired error
-        jest.spyOn(spotifyApi, 'fetchUserTopArtists').mockResolvedValue({ artists: [], error: 'The access token expired' });
+        jest.spyOn(spotifyApi, 'fetchUserTopArtists').mockResolvedValue({ data: { items: [] }, error: 'The access token expired' });
 
         // Render the TopArtistsPage
         renderTopArtistsPage();
@@ -127,7 +127,7 @@ describe('TopArtistsPage', () => {
         await waitForLoadingToFinish();
 
         // Verify redirection to login page
-        expect(screen.getByText('Login Page')).toBeInTheDocument();
+        expect(await screen.findByText('Login Page')).toBeInTheDocument();
     });
 
     test('verify styling and accessibility attributes using role', async () => {

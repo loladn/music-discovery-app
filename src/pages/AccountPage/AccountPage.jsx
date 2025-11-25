@@ -4,7 +4,7 @@ import { useRequireToken } from '../../hooks/useRequireToken.js';
 import './AccountPage.css';
 import '../PageLayout.css';
 import { handleTokenError } from '../../utils/handleTokenError.js';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 
 /**
  * Account component to display user profile information.
@@ -20,6 +20,7 @@ export default function AccountPage() {
   // state for loading and error
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [redirectToLogin, setRedirectToLogin] = useState(false);
 
   // require token to fetch profile
   const { token } = useRequireToken();
@@ -30,7 +31,7 @@ export default function AccountPage() {
   }, []);
 
 
-      useEffect(() => {
+  useEffect(() => {
     if (!token) return; // wait for auth check
     // fetch user profile when token changes
     fetchAccountProfile(token)
@@ -41,7 +42,7 @@ export default function AccountPage() {
 
           // cas spécifique : token expiré -> redirection explicite vers /login
           if (message && message.toLowerCase().includes('access token expired')) {
-            navigate('/login', { replace: true });
+            setRedirectToLogin(true);
             return;
           }
 
@@ -62,6 +63,10 @@ export default function AccountPage() {
       });
   }, [token, navigate]);
 
+
+  if (redirectToLogin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <section className="account-page page-container" aria-labelledby="account-page-title">
