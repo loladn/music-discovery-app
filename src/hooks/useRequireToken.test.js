@@ -62,7 +62,7 @@ describe('useRequireToken', () => {
     });
     const final = values[values.length-1];
     expect(final.token).toBe(null);
-    expect(screen.getByTestId('login-page')).toBeInTheDocument();
+    expect(await screen.findByTestId('login-page')).toBeInTheDocument();
   });
 
   test('cleanup prevents state update after unmount before microtask resolves', async () => {

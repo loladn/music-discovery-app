@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from '@jest/globals';
 import '@testing-library/jest-dom';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import TopArtistsPage, { limit, timeRange } from './TopArtistsPage.jsx';
 import * as spotifyApi from '../../api/spotify-me.js';
@@ -127,7 +127,7 @@ describe('TopArtistsPage', () => {
         await waitForLoadingToFinish();
 
         // Verify redirection to login page
-        expect(screen.getByText('Login Page')).toBeInTheDocument();
+        expect(await screen.findByText('Login Page')).toBeInTheDocument();
     });
 
     test('verify styling and accessibility attributes using role', async () => {
@@ -148,5 +148,22 @@ describe('TopArtistsPage', () => {
         // should have ordered list with appropriate class name
         const list = screen.getByRole('list');
         expect(list).toHaveClass('artists-list');
+    });
+
+    test('correct artists ranking numbers', async () => {
+    // Render the TopArtistsPage
+    renderTopArtistsPage();
+
+    // wait for loading to finish
+    await waitForLoadingToFinish();
+
+    // Verify each TopArtistItem shows the expected 1-based index prefix (e.g. "1. Top Artist 1")
+    for (let i = 0; i < artistsData.items.length; i++) {
+        const artist = artistsData.items[i];
+        const item = await screen.findByTestId(`top-artist-item-${artist.id}`);
+        // inside the item, there should be a title that starts with the 1-based index
+        const titleText = `${i + 1}. ${artist.name}`;
+        expect(within(item).getByText(titleText)).toBeInTheDocument();
+    }
     });
 });
